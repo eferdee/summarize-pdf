@@ -311,6 +311,16 @@
     .topbar{ flex-wrap:wrap; }
   }
 
+  @media (max-width:560px){
+    .topbar{ padding:16px 20px 0; gap:10px; }
+    .hero{ padding:16px 20px 22px; }
+    main{ padding:0 20px 24px; }
+    .disclaimer{
+      white-space:normal;
+      line-height:1.4;
+    }
+  }
+
   /* ---------- Panels ---------- */
   main{
     position:relative;
