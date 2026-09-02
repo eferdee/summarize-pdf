@@ -110,6 +110,21 @@ async def extract(file: UploadFile = File(...)):
     return JSONResponse(_extraction_to_dict(result))
 
 
+def _count_words(summary: "object") -> int:
+    """
+    Hitung jumlah kata di seluruh bagian summary (untuk statistik output,
+    Tahap 5), bukan dari teks dokumen aslinya.
+    """
+    parts = [
+        summary.executive_summary,
+        " ".join(summary.key_points),
+        " ".join(summary.main_findings),
+        summary.conclusion,
+    ]
+    combined = " ".join(p for p in parts if p)
+    return len([w for w in combined.split() if w.strip()])
+
+
 @app.post("/api/summarize")
 async def summarize(file: UploadFile = File(...)):
     extraction = await _validate_and_extract(file)
@@ -138,6 +153,8 @@ async def summarize(file: UploadFile = File(...)):
             "extraction_seconds": extraction.processing_seconds,
             "summarization_seconds": summary.processing_seconds,
             "model": summary.model,
+            "chunk_count": summary.chunk_count,
+            "summary_word_count": _count_words(summary),
             "warnings": combined_warnings,
             "summary": {
                 "executive_summary": summary.executive_summary,
