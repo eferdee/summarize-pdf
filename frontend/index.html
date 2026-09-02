@@ -283,9 +283,24 @@
     margin:8px 0 0;
   }
 
+  .chunk-note{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size:12px;
+    font-weight:500;
+    color:var(--accent-dark);
+    background:var(--accent-wash);
+    padding:5px 10px;
+    border-radius:20px;
+    margin:0 0 14px;
+    width:fit-content;
+  }
+
   .result-meta{
     display:flex;
-    gap:20px;
+    flex-wrap:wrap;
+    gap:16px 20px;
     padding-bottom:18px;
     margin-bottom:18px;
     border-bottom:1px solid var(--line);
@@ -411,8 +426,11 @@
         <div class="result-meta">
           <div><strong id="metaPages">—</strong>pages</div>
           <div><strong id="metaTime">—</strong>processed</div>
+          <div><strong id="metaWords">—</strong>summary words</div>
           <div><strong id="metaModel">—</strong>model</div>
         </div>
+
+        <p class="chunk-note" id="chunkNote" style="display:none;"></p>
 
         <p class="stage-note" id="warningsNote" style="display:none;"></p>
 
@@ -439,7 +457,7 @@
     </section>
   </main>
 
-  <footer>Tahap 3 — Ringkasan dibuat oleh LLM (Claude API) lewat backend FastAPI. Dokumen sangat panjang masih dipotong sementara (chunking asli menyusul Tahap 4).</footer>
+  <footer>Tahap 5 — Ringkasan dibuat oleh LLM (Gemini API) lewat backend FastAPI. Dokumen panjang otomatis dipecah jadi beberapa bagian (chunking) sebelum digabung jadi ringkasan akhir.</footer>
 </div>
 
 <script>
@@ -635,7 +653,17 @@ function renderSummaryResult(data){
   document.getElementById('metaPages').textContent = data.page_count;
   const totalTime = (data.extraction_seconds || 0) + (data.summarization_seconds || 0);
   document.getElementById('metaTime').textContent = totalTime.toFixed(1) + 's';
+  document.getElementById('metaWords').textContent =
+    (data.summary_word_count || 0).toLocaleString('id-ID');
   document.getElementById('metaModel').textContent = data.model || '—';
+
+  const chunkNote = document.getElementById('chunkNote');
+  if(data.chunk_count && data.chunk_count > 1){
+    chunkNote.textContent = `⚡ Diproses dalam ${data.chunk_count} bagian (chunking)`;
+    chunkNote.style.display = 'inline-flex';
+  } else {
+    chunkNote.style.display = 'none';
+  }
 
   const warningsNote = document.getElementById('warningsNote');
   if(data.warnings && data.warnings.length){
