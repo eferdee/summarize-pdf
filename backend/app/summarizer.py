@@ -34,6 +34,7 @@ from dataclasses import dataclass, field
 
 from dotenv import load_dotenv
 from google import genai
+from google.genai import errors as genai_errors
 from google.genai import types
 
 
@@ -213,6 +214,55 @@ SUMMARY_SCHEMA = {
 
 
 # =========================================================
+# Error classification untuk panggilan Gemini API
+# =========================================================
+
+def _raise_from_gemini_exception(exc: Exception) -> None:
+    """
+    Ubah exception dari Gemini SDK jadi SummarizationError dengan pesan
+    yang aman & jelas untuk user, tergantung jenis errornya. Detail
+    teknis asli TIDAK pernah diteruskan ke user, hanya dicatat lewat
+    exception chaining (`from exc`) untuk debugging di log server.
+    """
+
+    if isinstance(exc, genai_errors.APIError):
+        status = getattr(exc, "code", None)
+
+        if status == 429:
+            raise SummarizationError(
+                "The AI service is receiving too many requests right now "
+                "(free tier rate limit). Please wait a moment and try again.",
+                code="rate_limited",
+            ) from exc
+
+        if status in (401, 403):
+            raise SummarizationError(
+                "Summarization is not configured correctly on the server "
+                "(invalid API key).",
+                code="invalid_api_key",
+            ) from exc
+
+        if status == 404:
+            raise SummarizationError(
+                "The configured AI model is unavailable. Please contact "
+                "the site administrator.",
+                code="model_not_found",
+            ) from exc
+
+        if status is not None and status >= 500:
+            raise SummarizationError(
+                "The AI service is temporarily unavailable. Please try "
+                "again in a moment.",
+                code="upstream_error",
+            ) from exc
+
+    raise SummarizationError(
+        "Unable to generate summary. Please try again.",
+        code="api_error",
+    ) from exc
+
+
+# =========================================================
 # Chunking helpers
 # =========================================================
 
@@ -286,10 +336,7 @@ def _summarize_chunk(
             ),
         )
     except Exception as exc:
-        raise SummarizationError(
-            "Unable to generate summary. Please try again.",
-            code="api_error",
-        ) from exc
+        _raise_from_gemini_exception(exc)
 
     return (response.text or "").strip()
 
@@ -341,10 +388,7 @@ def _generate_structured_summary(
             ),
         )
     except Exception as exc:
-        raise SummarizationError(
-            "Unable to generate summary. Please try again.",
-            code="api_error",
-        ) from exc
+        _raise_from_gemini_exception(exc)
 
     try:
         parsed = response.parsed

@@ -132,9 +132,21 @@ async def summarize(file: UploadFile = File(...)):
     try:
         summary = summarize_text(extraction.full_text, filename=extraction.filename)
     except SummarizationError as exc:
-        # 503 kalau masalahnya konfigurasi/koneksi server, 502 kalau LLM-nya
-        # sendiri yang bermasalah (error / output aneh).
-        status = 503 if exc.code in ("missing_api_key", "connection_error") else 502
+        # Mapping code internal -> HTTP status yang tepat, supaya frontend
+        # (atau consumer API lain) bisa membedakan "coba lagi nanti" vs
+        # "server-nya salah konfigurasi" vs "LLM-nya sendiri bermasalah".
+        status_map = {
+            "missing_api_key": 503,
+            "invalid_api_key": 503,
+            "model_not_found": 503,
+            "connection_error": 503,
+            "rate_limited": 429,
+            "upstream_error": 502,
+            "api_error": 502,
+            "bad_llm_output": 502,
+            "empty_text": 400,
+        }
+        status = status_map.get(exc.code, 502)
         raise HTTPException(status_code=status, detail=exc.user_message) from exc
     except Exception as exc:  # noqa: BLE001
         # Error tak terduga -> JANGAN bocorkan detail internal ke user.
