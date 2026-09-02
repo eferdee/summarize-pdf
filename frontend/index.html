@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Summarizeeer — Summarize your document</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff;
+    --panel:#edeceA;
+    --panel-hover:#e6e4e0;
+    --ink:#161513;
+    --ink-soft:#6f6c66;
+    --ink-faint:#a6a29a;
+    --line:#dcd9d3;
+    --accent:#c8862a;
+    --accent-dark:#9c6a1e;
+    --accent-wash:#faedd8;
+    --danger:#b4432e;
+    --danger-wash:#fbeae6;
+    --success:#3f7d5c;
+    --radius:14px;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+
+  .wrap{
+    max-width:1180px;
+    margin:0 auto;
+    padding:64px 32px 48px;
+  }
+
+  header{
+    text-align:center;
+    margin-bottom:56px;
+  }
+
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:clamp(40px,6vw,64px);
+    letter-spacing:-0.01em;
+    margin:0 0 6px;
+    position:relative;
+    display:inline-block;
+  }
+
+  h1 .dot{ color:var(--accent); }
+
+  .tagline{
+    font-size:16px;
+    color:var(--ink-soft);
+    margin:0;
+  }
+
+  .underline{
+    width:64px;
+    height:3px;
+    background:var(--accent);
+    margin:18px auto 0;
+    border-radius:2px;
+  }
+
+  main{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:24px;
+  }
+
+  @media (max-width:780px){
+    main{ grid-template-columns:1fr; }
+  }
+
+  .panel{
+    background:var(--panel);
+    border-radius:var(--radius);
+    padding:32px;
+    min-height:460px;
+    display:flex;
+    flex-direction:column;
+  }
+
+  .panel-label{
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink-soft);
+    margin:0 0 20px;
+  }
+
+  /* Dropzone */
+  .dropzone{
+    flex:1;
+    border:2px dashed var(--line);
+    border-radius:10px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:32px;
+    cursor:pointer;
+    transition:border-color .18s ease, background .18s ease;
+    background:transparent;
+  }
+
+  .dropzone:hover{
+    border-color:var(--ink-faint);
+    background:rgba(255,255,255,.35);
+  }
+
+  .dropzone.dragover{
+    border-color:var(--accent);
+    background:var(--accent-wash);
+  }
+
+  .dropzone.has-error{
+    border-color:var(--danger);
+    background:var(--danger-wash);
+  }
+
+  .dz-icon{
+    width:44px;
+    height:44px;
+    margin-bottom:16px;
+    color:var(--ink-faint);
+  }
+
+  .dropzone.dragover .dz-icon,
+  .dropzone.has-file .dz-icon{ color:var(--accent-dark); }
+
+  .dz-title{
+    font-size:15px;
+    font-weight:500;
+    margin:0 0 4px;
+  }
+
+  .dz-sub{
+    font-size:13px;
+    color:var(--ink-faint);
+    margin:0;
+  }
+
+  .dz-sub button{
+    background:none;
+    border:none;
+    padding:0;
+    font:inherit;
+    color:var(--accent-dark);
+    text-decoration:underline;
+    cursor:pointer;
+  }
+
+  input[type=file]{ display:none; }
+
+  /* File chip once selected */
+  .file-chip{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    text-align:left;
+    width:100%;
+    max-width:340px;
+  }
+
+  .file-chip-icon{
+    width:38px;height:38px;
+    border-radius:8px;
+    background:var(--accent-wash);
+    color:var(--accent-dark);
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+    font-size:12px;
+    font-weight:700;
+  }
+
+  .file-chip-info{ flex:1; min-width:0; }
+  .file-chip-name{
+    font-size:14px; font-weight:500;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .file-chip-size{ font-size:12px; color:var(--ink-faint); }
+
+  .file-chip-remove{
+    background:none;border:none;cursor:pointer;
+    color:var(--ink-faint);
+    width:28px;height:28px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;
+    flex-shrink:0;
+  }
+  .file-chip-remove:hover{ background:rgba(0,0,0,.06); color:var(--ink); }
+
+  .error-msg{
+    margin-top:14px;
+    font-size:13px;
+    color:var(--danger);
+    display:none;
+  }
+  .error-msg.show{ display:block; }
+
+  /* Summarize button */
+  .btn-primary{
+    margin-top:24px;
+    width:100%;
+    padding:14px;
+    border-radius:9px;
+    border:none;
+    background:var(--ink);
+    color:#fff;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    transition:background .15s ease, transform .1s ease;
+  }
+  .btn-primary:hover:not(:disabled){ background:#000; }
+  .btn-primary:active:not(:disabled){ transform:scale(0.99); }
+  .btn-primary:disabled{
+    background:var(--ink-faint);
+    cursor:not-allowed;
+  }
+  .btn-primary.loading{
+    background:var(--accent-dark);
+  }
+
+  /* Right panel states */
+  .result-empty{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    color:var(--ink-faint);
+  }
+  .result-empty svg{ width:40px;height:40px; margin-bottom:14px; opacity:.6; }
+  .result-empty p{ font-size:14px; margin:0; max-width:220px; }
+
+  .result-loading{
+    flex:1;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+  }
+  .result-loading.show{ display:flex; }
+
+  .spinner{
+    width:32px;height:32px;
+    border:3px solid var(--line);
+    border-top-color:var(--accent);
+    border-radius:50%;
+    animation:spin .8s linear infinite;
+    margin-bottom:16px;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .result-loading .step{
+    font-size:13px;
+    color:var(--ink-soft);
+    transition:opacity .2s ease;
+  }
+
+  .result-content{ display:none; flex:1; flex-direction:column; }
+  .result-content.show{ display:flex; }
+
+  .stage-note{
+    font-size:12px;
+    color:var(--ink-faint);
+    font-style:italic;
+    margin:8px 0 0;
+  }
+
+  .result-meta{
+    display:flex;
+    gap:20px;
+    padding-bottom:18px;
+    margin-bottom:18px;
+    border-bottom:1px solid var(--line);
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .result-meta strong{ color:var(--ink); display:block; font-size:15px; font-weight:600;}
+
+  .summary-section{ margin-bottom:20px; }
+  .summary-section:last-child{ margin-bottom:0; }
+  .summary-section h3{
+    font-size:13px;
+    font-weight:600;
+    color:var(--accent-dark);
+    margin:0 0 8px;
+  }
+  .summary-section p{
+    font-size:14px;
+    line-height:1.6;
+    margin:0;
+    color:var(--ink);
+  }
+  .summary-section ul{
+    margin:0; padding-left:18px;
+    font-size:14px; line-height:1.7;
+    color:var(--ink);
+  }
+
+  .result-error{
+    flex:1; display:none;
+    flex-direction:column;
+    align-items:center; justify-content:center;
+    text-align:center;
+  }
+  .result-error.show{ display:flex; }
+  .result-error svg{ width:34px;height:34px; color:var(--danger); margin-bottom:14px; }
+  .result-error p{ font-size:14px; color:var(--ink-soft); margin:0 0 16px; max-width:240px; }
+  .result-error button{
+    background:none; border:1px solid var(--line);
+    padding:9px 18px; border-radius:8px;
+    font:inherit; font-size:13px; font-weight:500;
+    cursor:pointer;
+  }
+  .result-error button:hover{ border-color:var(--ink-faint); }
+
+  footer{
+    text-align:center;
+    margin-top:40px;
+    font-size:12px;
+    color:var(--ink-faint);
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Summarizeeer<span class="dot">.</span></h1>
+    <p class="tagline">Summarize your document!</p>
+    <div class="underline"></div>
+  </header>
+
+  <main>
+    <!-- LEFT: Upload panel -->
+    <section class="panel">
+      <p class="panel-label">UPLOAD DOKUMEN (PDF)</p>
+
+      <div class="dropzone" id="dropzone">
+        <div id="dz-empty-state">
+          <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p class="dz-title">Drop PDF di sini</p>
+          <p class="dz-sub">atau <button type="button" id="browseBtn">pilih file</button></p>
+        </div>
+
+        <div class="file-chip" id="fileChip" style="display:none;">
+          <div class="file-chip-icon">PDF</div>
+          <div class="file-chip-info">
+            <div class="file-chip-name" id="fileName"></div>
+            <div class="file-chip-size" id="fileSize"></div>
+          </div>
+          <button class="file-chip-remove" id="removeFile" title="Hapus file">✕</button>
+        </div>
+
+        <input type="file" id="fileInput" accept="application/pdf">
+      </div>
+
+      <p class="error-msg" id="errorMsg"></p>
+
+      <button class="btn-primary" id="summarizeBtn" disabled>Summarize</button>
+    </section>
+
+    <!-- RIGHT: Result panel -->
+    <section class="panel">
+      <p class="panel-label">HASIL</p>
+
+      <div class="result-empty" id="resultEmpty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9 12h6M9 16h6M9 8h2" stroke-linecap="round"/>
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke-linejoin="round"/>
+          <path d="M14 2v6h6" stroke-linejoin="round"/>
+        </svg>
+        <p>Ringkasan akan muncul di sini setelah kamu upload dan proses dokumen.</p>
+      </div>
+
+      <div class="result-loading" id="resultLoading">
+        <div class="spinner"></div>
+        <p class="step" id="loadingStep">Mengekstrak teks dari PDF...</p>
+      </div>
+
+      <div class="result-error" id="resultError">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 8v5M12 16h.01" stroke-linecap="round"/>
+        </svg>
+        <p id="errorText">Unable to generate summary. Please try again.</p>
+        <button id="retryBtn">Coba lagi</button>
+      </div>
+
+      <div class="result-content" id="resultContent">
+        <div class="result-meta">
+          <div><strong id="metaPages">—</strong>pages</div>
+          <div><strong id="metaTime">—</strong>processed</div>
+          <div><strong id="metaModel">—</strong>model</div>
+        </div>
+
+        <p class="stage-note" id="warningsNote" style="display:none;"></p>
+
+        <div class="summary-section">
+          <h3>EXECUTIVE SUMMARY</h3>
+          <p id="sumExec"></p>
+        </div>
+
+        <div class="summary-section">
+          <h3>KEY POINTS</h3>
+          <ul id="sumKeyPoints"></ul>
+        </div>
+
+        <div class="summary-section">
+          <h3>MAIN FINDINGS</h3>
+          <ul id="sumFindings"></ul>
+        </div>
+
+        <div class="summary-section">
+          <h3>CONCLUSION</h3>
+          <p id="sumConclusion"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>Tahap 3 — Ringkasan dibuat oleh LLM (Claude API) lewat backend FastAPI. Dokumen sangat panjang masih dipotong sementara (chunking asli menyusul Tahap 4).</footer>
+</div>
+
+<script>
+const dropzone   = document.getElementById('dropzone');
+const fileInput  = document.getElementById('fileInput');
+const browseBtn  = document.getElementById('browseBtn');
+const emptyState = document.getElementById('dz-empty-state');
+const fileChip   = document.getElementById('fileChip');
+const fileName   = document.getElementById('fileName');
+const fileSize   = document.getElementById('fileSize');
+const removeFile = document.getElementById('removeFile');
+const errorMsg   = document.getElementById('errorMsg');
+const summarizeBtn = document.getElementById('summarizeBtn');
+
+const resultEmpty   = document.getElementById('resultEmpty');
+const resultLoading = document.getElementById('resultLoading');
+const resultContent = document.getElementById('resultContent');
+const resultError   = document.getElementById('resultError');
+const loadingStep   = document.getElementById('loadingStep');
+const retryBtn      = document.getElementById('retryBtn');
+
+const MAX_SIZE_MB = 10;
+let currentFile = null;
+
+function formatSize(bytes){
+  if(bytes < 1024*1024) return (bytes/1024).toFixed(0) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+function showError(message){
+  errorMsg.textContent = message;
+  errorMsg.classList.add('show');
+  dropzone.classList.add('has-error');
+}
+
+function clearError(){
+  errorMsg.classList.remove('show');
+  dropzone.classList.remove('has-error');
+}
+
+function resetResultPanel(){
+  resultEmpty.style.display = 'flex';
+  resultLoading.classList.remove('show');
+  resultContent.classList.remove('show');
+  resultError.classList.remove('show');
+}
+
+function handleFile(file){
+  clearError();
+
+  if(file.type !== 'application/pdf'){
+    showError('Please upload a PDF document.');
+    return;
+  }
+  if(file.size > MAX_SIZE_MB * 1024 * 1024){
+    showError(`File size must be below ${MAX_SIZE_MB} MB.`);
+    return;
+  }
+
+  currentFile = file;
+  fileName.textContent = file.name;
+  fileSize.textContent = formatSize(file.size);
+  emptyState.style.display = 'none';
+  fileChip.style.display = 'flex';
+  dropzone.classList.add('has-file');
+  summarizeBtn.disabled = false;
+  resetResultPanel();
+}
+
+function clearFile(){
+  currentFile = null;
+  fileInput.value = '';
+  emptyState.style.display = 'block';
+  fileChip.style.display = 'none';
+  dropzone.classList.remove('has-file');
+  summarizeBtn.disabled = true;
+  clearError();
+  resetResultPanel();
+}
+
+// Click / browse
+browseBtn.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+dropzone.addEventListener('click', () => { if(!currentFile) fileInput.click(); });
+fileInput.addEventListener('change', () => { if(fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+// Drag & drop
+['dragenter','dragover'].forEach(evt => {
+  dropzone.addEventListener(evt, (e) => {
+    e.preventDefault(); e.stopPropagation();
+    if(!currentFile) dropzone.classList.add('dragover');
+  });
+});
+['dragleave','drop'].forEach(evt => {
+  dropzone.addEventListener(evt, (e) => {
+    e.preventDefault(); e.stopPropagation();
+    dropzone.classList.remove('dragover');
+  });
+});
+dropzone.addEventListener('drop', (e) => {
+  const file = e.dataTransfer.files[0];
+  if(file) handleFile(file);
+});
+
+removeFile.addEventListener('click', (e) => { e.stopPropagation(); clearFile(); });
+
+// Tahap 3: panggilan nyata ke backend FastAPI (PDF -> Text -> Summary via LLM).
+// Ganti API_BASE ini kalau backend dijalankan di host/port lain.
+const API_BASE = 'http://127.0.0.1:8000';
+
+const loadingSteps = [
+  'Mengunggah PDF...',
+  'Mengekstrak teks dari PDF...',
+  'Meringkas dengan AI...',
+  'Menyusun hasil...'
+];
+
+summarizeBtn.addEventListener('click', () => {
+  if(!currentFile) return;
+  runSummarize();
+});
+
+async function runSummarize(){
+  resultEmpty.style.display = 'none';
+  resultContent.classList.remove('show');
+  resultError.classList.remove('show');
+  resultLoading.classList.add('show');
+
+  summarizeBtn.disabled = true;
+  summarizeBtn.classList.add('loading');
+  summarizeBtn.textContent = 'Processing...';
+
+  let stepIndex = 0;
+  loadingStep.textContent = loadingSteps[0];
+  const stepInterval = setInterval(() => {
+    stepIndex = (stepIndex + 1) % loadingSteps.length;
+    loadingStep.textContent = loadingSteps[stepIndex];
+  }, 900);
+
+  try {
+    const formData = new FormData();
+    formData.append('file', currentFile);
+
+    const res = await fetch(`${API_BASE}/api/summarize`, {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if(!res.ok){
+      // Backend selalu mengirim pesan error yang aman ditampilkan (lihat main.py).
+      throw new Error(data.detail || 'Unable to generate summary. Please try again.');
+    }
+
+    renderSummaryResult(data);
+  } catch(err){
+    document.getElementById('errorText').textContent =
+      err.message === 'Failed to fetch'
+        ? 'Cannot reach the backend. Make sure the FastAPI server is running.'
+        : err.message;
+    resultError.classList.add('show');
+  } finally {
+    clearInterval(stepInterval);
+    resultLoading.classList.remove('show');
+    summarizeBtn.disabled = false;
+    summarizeBtn.classList.remove('loading');
+    summarizeBtn.textContent = 'Summarize';
+  }
+}
+
+retryBtn.addEventListener('click', () => {
+  resultError.classList.remove('show');
+  runSummarize();
+});
+
+function fillList(ulEl, items, emptyText){
+  ulEl.innerHTML = '';
+  if(!items || !items.length){
+    const li = document.createElement('li');
+    li.textContent = emptyText;
+    li.style.color = 'var(--ink-faint)';
+    ulEl.appendChild(li);
+    return;
+  }
+  items.forEach(text => {
+    const li = document.createElement('li');
+    li.textContent = text;
+    ulEl.appendChild(li);
+  });
+}
+
+function renderSummaryResult(data){
+  document.getElementById('metaPages').textContent = data.page_count;
+  const totalTime = (data.extraction_seconds || 0) + (data.summarization_seconds || 0);
+  document.getElementById('metaTime').textContent = totalTime.toFixed(1) + 's';
+  document.getElementById('metaModel').textContent = data.model || '—';
+
+  const warningsNote = document.getElementById('warningsNote');
+  if(data.warnings && data.warnings.length){
+    warningsNote.textContent = data.warnings.join(' ');
+    warningsNote.style.display = 'block';
+  } else {
+    warningsNote.style.display = 'none';
+  }
+
+  const summary = data.summary || {};
+  document.getElementById('sumExec').textContent =
+    summary.executive_summary || '(Tidak ada ringkasan.)';
+  fillList(document.getElementById('sumKeyPoints'), summary.key_points, 'Tidak ada key points.');
+  fillList(document.getElementById('sumFindings'), summary.main_findings, 'Tidak ada temuan spesifik.');
+  document.getElementById('sumConclusion').textContent =
+    summary.conclusion || '(Tidak ada kesimpulan.)';
+
+  resultContent.classList.add('show');
+}
+</script>
+
+</body>
+</html>

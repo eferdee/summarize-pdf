@@ -1,0 +1,24 @@
+# --- Secrets ---
+# JANGAN pernah push .env (isinya API key asli).
+# .env.example tetap boleh di-push karena isinya cuma placeholder.
+.env
+*.env
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+venv/
+env/
+.venv/
+*.egg-info/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- Logs / temp ---
+*.log
